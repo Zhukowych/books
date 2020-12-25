@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <p>сповіщення від адміністрації сайту</p>
+    <hr>
+    {% for messange in messanges %}
+        <div class="alert alert-info">
+            <h4>{{ messange.title }}<a href="{{ url('index:book', args=[messange.book.id]) }}">{{ messange.book.id }}</a></h4>
+            <strong class="messange_id">{{ messange.id }}</strong>
+            <hr>
+            {% if messange.type == 's' %}
+                <p>Тепер ви можете змінити публічність книги</p>
+            {% else %}
+                {{ messange.messange }}
+            {% endif %}
+            <hr>
+
+            {% if messange.answer_state == 'n' %}
+                <a href="{{ url("index:send_answer", args=[messange.id]) }}" class="btn btn-warning d-inline">Написати запит</a>
+                <p class="d-inline">ви ще не надсилали запит на розблокування книги</p>
+            {% elif messange.answer_state == 'p' %}
+                <p class="d-inline">ваше повідомлення оброблюється</p>
+            {% elif messange.type == 's' %}
+                <button class="btn btn-danger delete_button">Видалити це повідомлення</button>
+            {% else %}
+                <a href="{{ url("index:send_answer", args=[messange.id]) }}" class="btn btn-warning d-inline">Написати запит</a>
+                <p class="d-inline">ваш останній запит на розблокування книги був відхилений</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+    <script type="text/javascript">
+        $(document).on('click', '.delete_button', function() {
+            let messange_id = $(this).parents('.alert').find('.messange_id').text();
+            let btn = $(this);
+            $.ajax({
+                type: 'GET',
+                url: "/delete_messange/"+ messange_id,
+                data: {
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                },
+                success: function(json) {
+                    btn.parents('.alert').remove();
+                },
+                error: function(xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                }
+            });
+        });
+
+
+    </script>
+{% endblock %}

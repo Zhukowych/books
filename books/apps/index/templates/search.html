@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <form class="row mt-2 mb-2" action="{{ url("index:search", args=[title, author, category_id, is_public]) }}" method="post">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <div class="col-md-12">
+            {{ form.title }}
+        </div>
+        <div class="col-md-6 mt-2">
+            {{ form.author }}
+        </div>
+        <div class="col-md-3 mt-2">
+            {{ form.category }}
+        </div>
+        <div class="col-md-2 mt-2">
+            {{ form.is_public }}
+        </div>
+        <div class="col-md-1 mt-2">
+            <button class="btn btn-outline-success btn-block">Шукати</button>
+        </div>
+
+    </form>
+
+    <div class="row">
+        {% if books %}
+        {% for book in books %}
+            {% if book.is_public %}
+                <div class="col-md-3">
+
+                  <div class="card mb-4 shadow-sm">
+                      <img src="{{ book.image.image_link.url }}" class="card-img-top" style="height: 300px;" alt="">
+                    <div class="card-body">
+                        <a href="{{ url("index:book", args=[book.id]) }}"><strong class="card-text">{{ book.title }}</strong></a>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Категорія: <strong><a href="{{ url('index:category', args=[book.category.id]) }}">{{ book.category.name }}</a></strong></small>
+                      </div>
+                        <i>Переглядів: <strong>{{ book.views }}</strong></i><br>
+                        <i>Вподобань: <strong>{{ book.likes }}</strong></i><br>
+                    </div>
+                  </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+        {% else %}
+            <strong>Не має книг по вашому пошуку</strong>
+        {% endif %}
+    </div>
+
+{% endblock %}

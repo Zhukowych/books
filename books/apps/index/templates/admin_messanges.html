@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <p>повідомлення адміністратора</p>
+    <hr>
+    <br>
+    {% for messange in messanges %}
+        <div class="alert alert-info">
+            <h4>Повідомлення про розблокування книги #<a href="{{ url('index:book', args=[messange.book.id]) }}">{{ messange.book.id }}</a></h4>
+
+            <hr>
+            <strong class="messange_id">{{ messange.id }}</strong>
+            {{ messange.messange }}
+            <hr>
+            <button class="btn btn-danger not_accept_btn">Відкликати запит</button>
+            <button class="btn btn-success accept_btn">Підтвердити запит</button>
+
+
+        </div>
+    {% endfor %}
+
+    <script type="text/javascript">
+        $(document).on('click', '.not_accept_btn', function() {
+            let messange_id = $(this).parents('.alert').find('.messange_id').text();
+            let btn = $(this)
+            $.ajax({
+
+                type: 'GET',
+                url: "/not_accept_answer/"+ messange_id,
+                data: {
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                },
+                success: function(json) {
+                    btn.parents('.alert').remove();
+                },
+                error: function(xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                }
+            });
+        });
+
+        $(document).on('click', '.accept_btn', function() {
+            let messange_id = $(this).parents('.alert').find('.messange_id').text();
+            let btn = $(this);
+            $.ajax({
+                type: 'GET',
+                url: "/accept_answer/"+ messange_id,
+                data: {
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                },
+                success: function(json) {
+                    btn.parents('.alert').remove();
+                },
+                error: function(xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                }
+            });
+        });
+
+    </script>
+{% endblock %}

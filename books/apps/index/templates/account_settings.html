@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h3>Особисті данні</h3>
+    <p>Iм'я<strong> {{ request.user.first_name }} {{ request.user.last_name }}</strong></p>
+    <p>Логін<strong> {{ request.user }}</strong></p>
+    <p>Емейл<strong> {{ request.user.email }}</strong></p>
+    <a href="{{ url("index:change_password") }}" class="btn btn-success">Змінити пароль</a>
+    <a href="{{ url("index:change_user_data") }}" class="btn btn-info">Змінити данні про користувача</a>
+    {% if request.user.has_perm("auth.admin") %}
+        <a class="btn btn-outline-danger" href="{{ url("index:train_model") }}">Перетренувати модель</a>
+    {% endif %}
+{% endblock %}

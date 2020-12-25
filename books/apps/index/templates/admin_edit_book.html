@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <h4>Редагування данних книги {{ book.title }}</h4>
+    <hr>
+    <form enctype="multipart/form-data" action="{{ url("index:admin_edit_book", args=[book.id]) }}" method="post">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        {{ form }}
+        <br>
+        {% if ban_param %}
+            <button class="btn btn-outline-danger">Підтвердити заблокування книги</button>
+        {% else %}
+            <button class="btn btn-outline-success">Підтвердити розблокування книги</button>
+        {% endif %}
+
+    </form>
+    <br>
+{% endblock %}

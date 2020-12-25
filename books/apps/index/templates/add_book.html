@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <style>
+        input[type='file'] {
+          display: block;
+            width: 100%;
+            height: calc(1.5em + .75rem + 2px);
+            padding: .375rem .75rem;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #495057;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+            transition: border-color .15s
+        }
+    </style>
+    <p>
+    Додати нову книгу
+    </p>
+    <hr>
+
+
+
+    <form id="file_form" enctype="multipart/form-data" action="{{ url("index:load_buffer", args=[0, 0]) }}" method="post">
+        <input class="second_csrf" type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        {{ file_form }}
+    </form>
+    <form enctype="multipart/form-data" method="post" class="main_form" action="{{ url("index:add_book") }}">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        {{ form.title.label }}
+        {{ form.title }}
+        {{ form.author.label }}
+        {{ form.author }}
+        {{ form.translator.label }}
+        {{ form.translator }}
+        {{ form.series.label }}
+        {{ form.series }}
+        {{ form.countOfPages.label }}
+        {{ form.countOfPages }}
+        {{ form.language.label }}
+        {{ form.language }}
+        {{ form.edition.label }}
+        {{ form.edition }}
+
+
+        {{ form.description.label }}
+        {{ form.description }}
+        {{ form.image.label }}
+        {{ form.image }}
+
+        {{ form.isPublic.label }}
+        {{ form.isPublic }}
+        <br>
+        {% for error in set_category_form.errors.__all__ %}
+
+            <strong>{{ error }}</strong>
+
+
+        {% endfor %}<br>
+        {{ set_category_form.category.label }}
+        {{ set_category_form.category }}
+
+        <p>Створити нову категорію та вибрати її</p>
+        <hr>
+        {{ set_category_form.name.label }}
+        {{ set_category_form.name }}
+        {{ set_category_form.parent_category.label }}
+        {{ set_category_form.parent_category }}
+        <br>
+
+    </form>
+
+
+
+    <button type="button" class="btn btn-outline-danger">Зберегти книгу</button>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            file_names = $('.books_ul a');
+            console.log(file_names);
+            for (let i = 0; i < file_names.length; i++) {
+                if(file_names[i].text!="[x]") {
+                    filename = file_names[i].text.split('/')[1];
+
+                    if (filename.length >= 30) {
+                        filename = filename.slice(0, 30) + "..."
+                    }
+                    file_names[i].text = filename;
+                }
+            }
+        });
+
+
+        $(document).on('click', '.btn-outline-danger', function () {
+            $('.main_form').submit()
+        });
+
+        $(document).on('click', '.close_button', function () {
+             $('.book_image').attr('src', '{{ static("file.png") }}');
+             $('.close_button').remove();
+             $('#id_image').val("");
+        });
+
+        $(document).on('click', '.delete_buffer', function() {
+            let btn = $(this);
+
+            $.ajax({
+
+                type: 'GET',
+                url: "/delete_buffer/"+ $(this).parents('li').find('.filename').attr('href').split('/')[3]+"/0",
+
+                success: function(json) {
+                    btn.parents('li').remove()
+                },
+                error: function(xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                }
+            });
+        });
+
+
+        $(document).on('input', '#id_file', function (e) {
+            $("#file_form").submit();
+        });
+        $(document).on('submit', '#file_form', function (e) {
+            e.preventDefault();
+            var data = new FormData($('#file_form').get(0));
+            $.ajax({
+                type: 'POST',
+                url: '{{ url("index:load_buffer", args=[0, 0]) }}',
+                data: data,
+                cache: false,
+                processData: false,
+                contentType: false,
+                success: function (json) {
+                    document.getElementById("file_form").reset();
+                    console.log(json['url']);
+                    file_name = json['url'].split('/')[1];
+                    if (file_name.length >= 20){
+                        file_name = file_name.slice(0,20)+"..."
+                    }
+                    $('.books_ul').prepend('<li class="nav-item p-0"><a class="filename" href="'+ "/media/"+ json['url'] +'" target="_blank">'+file_name+' '+'</a><a style="cursor: pointer" class="nav-link d-inline delete_buffer">[x]</a></li>');
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                }
+            });
+        });
+        document.onpaste = function(event){
+
+          const fileInput = document.getElementById("id_image");
+
+           fileInput.files = event.clipboardData.files;
+            var file = event.clipboardData.files[0];
+            var reader  = new FileReader();
+
+              var reader = new FileReader();
+              reader.onload = function(e){
+                 $('.book_image').attr('src', reader.result)};
+             reader.readAsDataURL(file);
+            $('.image_container').append('<div class="close_button">x</div>');
+
+        };
+        $(document).on('input', '#id_image', function () {
+            var file = this.files[0];
+            var reader  = new FileReader();
+
+            reader.onloadend = function()  {
+                 $('.book_image').attr('src', reader.result);
+             };
+             reader.readAsDataURL(file);
+            $('.image_container').append('<div class="close_button">x</div>');
+        });
+    </script>
+
+
+{% endblock %}

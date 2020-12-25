@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>{% block title %}{% endblock %}</title>
+      <link rel="stylesheet" href="{{ static('bootstrap.min.css') }}">
+        <script
+          src="https://code.jquery.com/jquery-3.5.1.min.js"
+          integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+          crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+
+       <script src="{{ static('bootstrap-select.min.js') }}"></script>
+       <link rel="stylesheet" href="{{ static("bootstrap-select.min.css") }}">
+       <style type="text/css">
+           .image_container{
+              position: relative;
+           }
+           .close_button{
+               cursor: pointer;
+               position: absolute;
+                right: 10px;
+               top:10px;
+               width: 20px;
+               height: 20px;
+               background-color: red;
+               text-align: center;
+                vertical-align: middle;
+                line-height: 20px;
+           }
+       </style>
+   </head>
+   <body class="h-100">
+      <h2 align="center" class="mt-1">BOOKS</h2>
+      <nav class="navbar navbar-expand-lg p-0 navbar-light bg-light justify-content-center">
+         <div class=justify-content-center" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+
+                {% if request.user.is_authenticated %}
+                        <li class="nav-item">
+                      <a class="nav-link" href="{{ url("index:home") }}">Головна <span class="sr-only">(current)</span></a>
+                   </li>
+                   <li class="nav-item">
+                      <a class="nav-link" href="{{ url("index:my_books") }}">Мої книги</a>
+                   </li>
+                   <li class="nav-item">
+                      <a class="nav-link" href="{{ url("index:favorite_books") }}">Улублені книги</a>
+                   </li>
+                   <li class="nav-item">
+                      <a class="nav-link" href="{{ url('index:account_settings') }}">Акаунт</a>
+                   </li>
+                   <li class="nav-item">
+                      <a class="nav-link" href="{{ url('index:messanges') }}">Повідомлення</a>
+                   </li>
+                   <li class="nav-item">
+                        {% if request.user.has_perm("auth.admin") %}
+                            <a class="nav-link" href="{{ url('index:admin_messanges') }}">Повідомлення адміністратора</a>
+                        {% endif %}
+                   </li>
+                   <li class="nav-item">
+                      <a class="nav-link" href="{{ url("index:logout") }}">Вийти</a>
+                   </li>
+                {% else %}
+                    <li class="nav-item active">
+                      <a class="nav-link" href="{{ url("index:home") }}">Головна <span class="sr-only">(current)</span></a>
+                   </li>
+                    <li class="nav-item ">
+                      <a class="nav-link" href="{{ url("index:login") }}">Ввійти </a>
+                   </li>
+                    <li class="nav-item" >
+                      <a class="nav-link" href="{{ url("index:register") }}">Зареєструватися</a>
+                   </li>
+                {% endif %}
+            </ul>
+         </div>
+      </nav>
+      <div class="row w-100 h-100">
+         <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="sidebar-sticky p-2">
+            {% if files %}
+                <div class="image_container">
+                    {% if book %}
+                        <div class="close_button">x</div>
+                        <img src="{{ book.image.image_link.url }}" alt="" class="w-100 book_image" style="height: 300px" />
+                    {% else %}
+                        <img src="{{ static("file.png") }}" alt="" class="w-100 book_image" style="height: 300px" />
+                    {% endif %}
+                </div>
+                <ul class="books_ul navbar-nav">
+                    {% for file in buffer %}
+                        <li class="nav-item p-0 w-100"><a class="filename w-100" href="{{ file.file.url }}" target="_blank">{{ file.file.name }}</a><br><a style="cursor: pointer" class="nav-link d-inline delete_buffer">[x]</a></li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <strong><h4 class="font-weight-normal">КАТЕГОРІЇ</h4></strong>
+                <ul class="navbar-nav">
+                    {% if category %}
+                        {% if category.parent %}
+                           <li class="nav-item p-0">
+                              <a class="nav-link p-0" href="{{ url("index:category", args=[category.parent.id]) }}">повернутись назад</a>
+                           </li>
+                        {% else %}
+                           <li class="nav-item p-0">
+                              <a class="nav-link p-0" href="{{ url("index:home") }}">повернутись назад</a>
+                           </li>
+                        {% endif %}
+                    {% endif %}
+                    {% if categories %}
+                        {% for category in categories %}
+                           <li class="nav-item p-0">
+                              <a class="nav-link p-0" href="{{ url("index:category", args=[category.id]) }}">{{ category }}</a>
+                           </li>
+
+                        {% endfor %}
+                    {% else %}
+                        <p>Немає категорій</p>
+                    {% endif %}
+                </ul>
+                </div>
+            {% endif %}
+         </nav>
+        <div class="col-md-10">
+
+            {% block content %}
+            {% endblock %}
+        </div>
+      </div>
+
+   </body>
+
+</html>

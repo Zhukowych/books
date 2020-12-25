@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <form class="row mt-2 mb-2" action="{{ url("index:my_books") }}" method="post">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <div class="col-md-12">
+            {{ form.title }}
+        </div>
+        <div class="col-md-6 mt-2">
+            {{ form.author }}
+        </div>
+        <div class="col-md-3 mt-2">
+            {{ form.category }}
+        </div>
+        <div class="col-md-2 mt-2">
+            {{ form.is_public }}
+        </div>
+        <div class="col-md-1 mt-2">
+            <button class="btn btn-outline-success btn-block">Шукати</button>
+        </div>
+
+    </form>
+
+
+
+    <p class="d-inline align-middle">Мої книги</p>
+    <a href="{{ url("index:add_book") }}" class="btn btn-outline-info d-inline float-right align-middle">Додати книгу</a>
+    <hr>
+    <div class="row">
+        {% for book in books %}
+
+                <div class="col-md-3">
+
+                  <div class="card mb-4 shadow-sm">
+                      <img src="{{ book.image }}" class="card-img-top" style="height: 300px;" alt="">
+                    <div class="card-body">
+                        <a href="{{ url("index:book", args=[book.id]) }}"><strong class="card-text">{{ book.title }}</strong></a>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Категорія: <strong><a href="{{ url('index:category', args=[book.category.id]) }}">{{ book.category.name }}</a></strong></small>
+                      </div>
+                        {% if request.user.has_perm("auth.admin") %}
+                            <a class="btn btn-sm btn-outline-danger" href="{{ url("index:admin_edit_book", args=[book.id]) }}">Змінити статус</a>
+                        {% endif %}
+                        <br>
+                        {% if book.referencedBookFiles %}
+                            {% for file in book.referencedBookFiles[:4] %}
+                                <a href="{{ file.file }}">{{ file.expansion }} |</a>
+                            {% endfor %}
+                        {% else %}
+                            <small class="text-muted">Ця книга не відображається в відкритому доступі, тому щов ви не вказали жодного файлу</small>
+                        {% endif %}
+                    </div>
+                  </div>
+                </div>
+
+        {% endfor %}
+    </div
+
+{% endblock %}

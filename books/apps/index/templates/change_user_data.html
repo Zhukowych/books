@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h3>Зміна данних користувача</h3>
+    <hr>
+    <form action="{{ url("index:change_user_data") }}" method="post">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        {{ form }}
+        <br>
+        <button class="btn btn-success">Зберегти</button>
+    </form>
+{% endblock %}

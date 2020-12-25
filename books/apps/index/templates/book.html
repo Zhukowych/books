@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-5">
+            <img src="{{ book.image.image_link.url }}" class="w-100" style="height: 700px;" alt="">
+        </div>
+        <div class="col-md-7">
+            <h2>{{ book.title }}</h2>
+            <hr>
+            <i>Автор: <strong>{{ book.author }}</strong></i><br>
+            <i>Перекладач: <strong>{{ book.translator }}</strong></i><br>
+            <i>Серія: <strong>{{ book.series }}</strong></i><br>
+            <i>Кількість сторінок: <strong>{{ book.count_of_pages }}</strong></i><br>
+            <i>Видання: <strong>{{ book.edition }}</strong></i><br>
+
+            {% if favorite_book %}
+                <button class="btn btn-success change_favorite">Забрати з улюблених</button>
+            {% else %}
+                <button class="btn btn-success change_favorite">Додати в улублені</button>
+            {% endif %}
+            {% if book.upload_author == request.user %}
+                <a href="{{ url("index:edit_book", args=[book.id]) }}" class="btn btn-outline-secondary">Редагувати</a>
+            {% endif %}
+
+            {% if request.user.has_perm("auth.admin") %}
+                <a class="btn btn-danger" href="{{ url("index:admin_edit_book", args=[book.id]) }}">Змінити статус</a>
+            {% endif %}
+            <hr>
+            Посилання на скачування книг
+            <br>
+            {% for file in book.referenced_book_file.all() %}
+                <a href="{{ file.file.url }}">{{ file.expansion }} |</a>
+            {% endfor %}
+            <hr>
+            <strong>Опис</strong>
+            <p class="text-justify left">{{ book.description }}</p>
+        </div>
+    </div>
+    <hr>
+    <h3>Коментарії</h3>
+    {% if request.user.is_authenticated %}
+        <form action="{{ url('index:book', args=[book.id]) }}" method="post" id="post-form">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+            {{ form }}
+            <br>
+            <button class="btn btn-success">Прокоментувати</button>
+        </form>
+
+
+
+
+    {% else %}
+        <p>ввійіть, щоб прокоментувати цю книгу</p>
+    {% endif %}
+    <hr>
+    <div class="comment_box">
+        {% for comment in book.comment_set.all() %}
+            <strong>{{ comment.user.username }}</strong>
+            <p class="text-justify">{{ comment.comment_text }}</p>
+            <hr>
+        {% endfor %}
+    </div>
+
+
+
+
+    <script type="text/javascript">
+
+
+        $(document).on('click', '.change_favorite', function() {
+            let btn = $(this);
+            $.ajax({
+
+                type: 'GET',
+                url: "/change_favorite/"+ {{ book.id }},
+                data: {
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                },
+                success: function(json) {
+                    $('.change_favorite').text(json['btn_text']);
+                },
+                error: function(xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                }
+            });
+        });
+
+
+        $(document).on('submit', '#post-form', function(e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '{{ url("index:add_comment", args=[book.id]) }}',
+                data: {
+                    comment_text: $('#id_comment_text').val(),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                },
+                success: function(json) {
+                    document.getElementById("post-form").reset();
+
+                    if('error' in Object.keys(json)){
+
+                    }else{
+                        $('.comment_box').append('<strong>'+json['username']+'</strong><p class="text-justify">'+json['comment_text']+'</p><hr>');
+                    }
+                },
+                error: function(xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                }
+            });
+        });
+
+
+
+    </script>
+
+
+{% endblock %}

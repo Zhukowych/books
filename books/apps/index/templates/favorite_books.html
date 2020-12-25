@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+ <div class="row">
+ {% for book in books %}
+           <div class="col-md-3">
+
+              <div class="card mb-4 shadow-sm">
+                  <img src="{{ book.image }}" class="card-img-top" style="height: 300px;" alt="">
+                <div class="card-body">
+                    <a href="{{ url("index:book", args=[book.id]) }}"><strong class="card-text">{{ book.title }}</strong></a>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Категорія: <strong><a href="{{ url('index:category', args=[book.category.id]) }}">{{ book.category.name }}</a></strong></small>
+                  </div>
+
+                    {% if (book.uploadAuthor.id == request.user.id|string) %}
+                        <a href="{{ url("index:edit_book", args=[book.id]) }}" class="btn btn-sm btn-outline-secondary">Редагувати</a>
+                    {% endif %}
+                    {% if request.user.has_perm("auth.admin") %}
+                        <a class="btn btn-sm btn-outline-danger" href="{{ url("index:admin_edit_book", args=[book.id]) }}">Змінити статус</a>
+                    {% endif %}
+                    <br>
+                    {% for file in book.referencedBookFile[:4] %}
+                        <a href="{{ file.file }}">{{ file.expansion }} |</a>
+                    {% endfor %}
+                </div>
+              </div>
+            </div>
+
+        {% endfor %}
+ </div>
+{% endblock %}

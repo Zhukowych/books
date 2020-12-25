@@ -1,0 +1,21 @@
+{% extends 'base_login.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+
+  <form class="form-signin" method="POST" action="{{ url('index:login') }}">
+    <h1 class="font-weight-normal" ALIGN="center">Ввійти</h1>
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+  	{{ form }}
+
+	<button class="gren-btn btn btn-lg btn-primary btn-block" type="submit">Ввійти</button>
+	<br>
+	<a href="{{ url('index:register') }}">Зареєструватися |</a>
+	<a href="{{ url('index:home') }}" align="right">На головну |</a>
+
+  	<p class="mt-5 mb-3 text-muted" ALIGN="center">&copy; 2019-2020</p>
+  </form>
+{% endblock %}
