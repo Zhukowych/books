@@ -1,4 +1,4 @@
-from .models import Book, BookImageLink, BookFiles, Categories, FavoriteBooksModel, BufferFiles
+from .models import Book, BookImageLink, BookFiles, Categories, FavoriteBooksModel, BufferFiles, Info
 from graphene_django import DjangoObjectType
 from django.contrib.auth.models import User
 

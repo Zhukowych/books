@@ -152,26 +152,28 @@ class FileUploadForm(forms.ModelForm):
 
 
 class SetCategoryForm(forms.Form):
-    category = forms.ModelChoiceField(label='Виберіть категорію', required=False,queryset=Categories.objects.all(),
-                                             widget=forms.Select(
-                                                 attrs={
-                                                     'class': 'form-control selectpicker',
-                                                     'data-live-search': "true"
-                                                 }
-                                             ))
-    name = forms.CharField(label=_("Назва категорії"), required=False,widget=forms.TextInput(
+    category = forms.ModelChoiceField(label='Виберіть категорію', required=False, queryset=Categories.objects.all(),
+                                      widget=forms.Select(
+                                          attrs={
+                                              'class': 'form-control selectpicker',
+                                              'data-live-search': "true"
+                                          }
+                                      ))
+    name = forms.CharField(label=_("Назва категорії"), required=False, widget=forms.TextInput(
         attrs={
             'class': 'form-control'
         }
     ))
 
-    parent_category = forms.ModelChoiceField(label='Виберіть батьківську категорію',required=False, queryset=Categories.objects.all(),
+    parent_category = forms.ModelChoiceField(label='Виберіть батьківську категорію', required=False,
+                                             queryset=Categories.objects.all(),
                                              widget=forms.Select(
                                                  attrs={
                                                      'class': 'form-control selectpicker',
                                                      'data-live-search': "true"
                                                  }
                                              ))
+
     def clean(self):
         category = self.cleaned_data.get('category')
         category_name = self.cleaned_data.get('name')
@@ -190,8 +192,6 @@ class SetCategoryForm(forms.Form):
             raise forms.ValidationError('Введіть назву категорії')
         else:
             raise forms.ValidationError("Ви маєте заповнити хоча б одне поле")
-
-
 
 
 class ReasonForm(forms.Form):
@@ -216,13 +216,13 @@ class SearchBookForm(forms.Form):
             'placeholder': "Введіть автора книги"
         }
     ))
-    CHOICES = ((i.name, i.name) for i in Categories.objects.all())
-    category = forms.ChoiceField(label='', choices=CHOICES, widget=forms.Select(
-        attrs={
-            'class': 'form-control selectpicker',
-            'data-live-search': "true"
-        }
-    ))
+    category = forms.ModelChoiceField(label='Виберіть категорію', required=False, queryset=Categories.objects.all(),
+                                      widget=forms.Select(
+                                          attrs={
+                                              'class': 'form-control selectpicker',
+                                              'data-live-search': "true"
+                                          }
+                                      ))
     CHOICES = (("так", "так"), ("ні", "ні"), ("усі", "усі"))
     is_public = forms.ChoiceField(label='Виберіть категоріюю книги', choices=CHOICES, widget=forms.Select(
         attrs={

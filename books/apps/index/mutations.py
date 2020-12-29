@@ -1,6 +1,7 @@
 from graphene_file_upload.scalars import Upload
 import graphene
-from .types import BookType, Book, BufferFiles, BookFiles, BookImageLinkType, BookImageLink
+from .types import BookType, Book, BufferFiles, BookFiles, BookImageLinkType, BookImageLink, CategoriesType, Categories, \
+    Info
 from django.utils import timezone
 
 
@@ -48,6 +49,80 @@ class CreateBook(graphene.Mutation):
         return CreateBook(ok=ok, book=book_instance)
 
 
+class EditBookData(graphene.Mutation):
+    class Arguments:
+        book_id = graphene.Int()
+        book_input = BookInput(required=True)
+
+    ok = graphene.Boolean()
+
+    @staticmethod
+    def mutate(self, info, book_id, book_input):
+        ok = True
+        book_instance = Book.objects.get(id=book_id)
+        book_instance.title = book_input.title
+        book_instance.translator = book_input.translator
+        book_instance.series = book_input.series
+        book_instance.count_of_pages = book_input.count_of_pages
+        book_instance.language = book_input.language
+        book_instance.edition = book_input.edition
+        book_instance.author = book_input.author
+        book_instance.category.id = book_input.category_id
+        book_instance.description = book_input.description
+        book_instance.is_public = book_input.is_public
+        if book_input.image_id != 0:
+            book_instance.image.id = book_input.image_id
+        book_instance.save()
+        return EditBookData(ok=ok)
+
+
+class ChangeBookVisibility(graphene.Mutation):
+    class Arguments:
+        book_id = graphene.Int()
+        user_id = graphene.Int()
+        reason = graphene.String()
+        can_book_change_public = graphene.Boolean()
+
+    ok = graphene.Boolean()
+
+    @staticmethod
+    def mutate(self, info, book_id, user_id, reason, can_book_change_public):
+        ok = True
+        book = Book.objects.get(id=book_id)
+        if can_book_change_public:
+            Info.objects.create(title="Повідомлення про заблокування книги під номером #", user_id=user_id,
+                                book_id=book_id, messange=reason, type='u', answer_state='n')
+            book.is_public = False
+            book.can_change_public = False
+            book.save()
+        else:
+            Info.objects.create(title="Повідомлення про розблокування книги під номером #", user_id=user_id,
+                                book_id=book_id, messange=reason, type='u', answer_state='n')
+            book.can_change_public = True
+            book.save()
+        return ChangeBookVisibility(ok=ok)
+
+
+class DeleteBook(graphene.Mutation):
+    class Arguments:
+        user_id = graphene.Int()
+        book_id = graphene.Int()
+
+    ok = graphene.Boolean()
+
+    @staticmethod
+    def mutate(self, info, user_id, book_id):
+        try:
+            book = Book.objects.get(id=book_id)
+        except Book.DoesNotExist:
+            return DeleteBook(ok=False)
+
+        book.image.delete()
+        BookFiles.objects.filter(book=book).delete()
+        book.delete()
+        return DeleteBook(ok=True)
+
+
 class MoveFilesFromBufferToVault(graphene.Mutation):
     class Arguments:
         user_id = graphene.Int()
@@ -64,6 +139,21 @@ class MoveFilesFromBufferToVault(graphene.Mutation):
             BookFiles.objects.create(book_id=book_id, file=element.file, expansion=element.file.name.split('.')[-1])
         buffer.delete()
         return MoveFilesFromBufferToVault(ok=ok, book=Book.objects.get(id=book_id))
+
+
+class CreateCategory(graphene.Mutation):
+    class Arguments:
+        name = graphene.String()
+        parent_category_id = graphene.Int()
+
+    ok = graphene.Boolean()
+    category = graphene.Field(CategoriesType)
+
+    @staticmethod
+    def mutate(self, info, name, parent_category_id):
+        ok = True
+        category_instance = Categories.objects.create(name=name, parent_id=parent_category_id)
+        return CreateCategory(ok=ok, category=category_instance)
 
 
 class UploadBookImageLink(graphene.Mutation):
@@ -83,4 +173,8 @@ class UploadBookImageLink(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     create_book = CreateBook.Field()
     move_book_files_from_buffer_to_vault = MoveFilesFromBufferToVault.Field()
+    create_category = CreateCategory.Field()
     upload_book_image_link = UploadBookImageLink.Field()
+    edit_book_data = EditBookData.Field()
+    change_book_visibility = ChangeBookVisibility.Field()
+    delete_book = DeleteBook.Field()

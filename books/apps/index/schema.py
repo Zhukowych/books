@@ -11,11 +11,13 @@ class Query(graphene.ObjectType):
     books_from_category = graphene.List(BookType, user_id=graphene.Int(), category_id=graphene.Int())
     favorite_books = graphene.List(FavoriteBookType, user_id=graphene.Int())
     children_categories = graphene.List(CategoriesType, category_id=graphene.Int())
+    search_books = graphene.List(BookType, title=graphene.String(), author=graphene.String(),
+                                 category_id=graphene.Int())
 
     @staticmethod
     def resolve_books(self, info, user_id):
         user = User.objects.get(id=user_id)
-        return Book.objects.filter(Q(is_public=True) | Q(is_public=False, upload_author=user)).order_by("-rating")
+        return Book.objects.filter(is_public=True).order_by("-rating")
 
     @staticmethod
     def resolve_my_books(self, info, user_id):
@@ -36,6 +38,17 @@ class Query(graphene.ObjectType):
     def resolve_children_categories(self, info, category_id):
         category = get_object_or_404(Categories, id=category_id)
         return category.get_children()
+
+    @staticmethod
+    def resolve_search_books(self, info, title, author, category_id):
+        if category_id:
+            category = Categories.objects.get(id=category_id)
+            categories_ids = category.get_descendants(include_self=True).values_list('id')
+            books = Book.objects.filter(title__contains=title, author__contains=author,
+                                        category_id__in=categories_ids, is_public=True)
+        else:
+            books = Book.objects.filter(title__contains=title, author__contains=author, is_public=True)
+        return books
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation, types=[Upload])

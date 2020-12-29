@@ -116,7 +116,6 @@ class LogOutView(View):
 class FavoriteBooks(View):
 
     def get(self, request, *args, **kwargs):
-
         books = DataQuery.get_favorite_books(request.user.id)
         return render(request, 'favorite_books.html',
                       {"books": books, "categories": Categories.objects.filter(level=0)})
@@ -270,9 +269,9 @@ class EditBook(View):
         if book.upload_author == request.user:
             form = AddBookForm(request.POST, request.FILES,
                                initial={'title': book.title, 'author': book.author, 'description': book.description,
-                                        'category': book.category.id, 'is_public': book.is_public,
+                                        'category': book.category.id, 'isPublic': book.is_public,
                                         'series': book.series,
-                                        'edition': book.edition, 'count_of_pages': book.count_of_pages,
+                                        'edition': book.edition, 'countOfPages': book.count_of_pages,
                                         'translator': book.translator})
             file_form = FileUploadForm(request.POST, request.FILES)
             set_category_form = SetCategoryForm(request.POST, initial={'category': book.category})
@@ -280,34 +279,8 @@ class EditBook(View):
                 errors = file_form.errors.setdefault("file", ErrorList())
                 errors.append("Ви маєте внести хоча б один файл")
             if form.is_valid() and set_category_form.is_valid():
-                form_data = form.cleaned_data.copy()
-
-                del form_data['image']
-                del form_data['is_public']
-
-                book = book.__dict__
-                del book['_state']
-
-                book.update(form_data)
-                book = Book(**book)
-
-                if book.can_change_public:
-                    book.is_public = form.cleaned_data['is_public']
-
-                if form.cleaned_data['image']:
-                    book.image.image_link = form.cleaned_data['image']
-                    book.image.save()
-
-                category = set_category_form.cleaned_data['category']
-                parent_category = set_category_form.cleaned_data['parent_category']
-                name = set_category_form.cleaned_data['name']
-                if category:
-                    category = category
-                else:
-                    category = Categories.objects.create(name=name, parent=parent_category)
-                book.category = category
-                book.save()
-
+                DataQuery.edit_book(edited_book_data=form.cleaned_data.copy(),
+                                    category_data=set_category_form.cleaned_data.copy(), book_id=book.id)
                 return HttpResponseRedirect(reverse('index:my_books', args=()))
 
         else:
@@ -323,9 +296,7 @@ class AdminEditBookView(View, PermissionRequiredMixin):
 
     def get(self, request, *args, **kwargs):
         book = get_object_or_404(Book, id=kwargs['book_id'])
-
         form = ReasonForm(request.POST or None)
-
         return render(request, 'admin_edit_book.html',
                       {"form": form, 'book': book, "categories": Categories.objects.filter(level=0),
                        "ban_param": book.can_change_public})
@@ -334,17 +305,9 @@ class AdminEditBookView(View, PermissionRequiredMixin):
         book = get_object_or_404(Book, id=kwargs['book_id'])
         form = ReasonForm(request.POST)
         if form.is_valid():
-            if book.can_change_public:
-                Info.objects.create(title="Повідомлення про заблокування книги під номером #", user=book.upload_author,
-                                    book=book, messange=form.cleaned_data['reason'], type='u', answer_state='n')
-                book.is_public = False
-                book.can_change_public = False
-                book.save()
-            else:
-                Info.objects.create(title="Повідомлення про розблокування книги під номером #", user=book.upload_author,
-                                    book=book, messange=form.cleaned_data['reason'], type='u', answer_state='n')
-                book.can_change_public = True
-                book.save()
+            DataQuery.change_books_visibility({'bookId': book.id, 'userId': request.user.id,
+                                               'reason': form.cleaned_data['reason'],
+                                               'canBookChangePublic': book.can_change_public})
             return HttpResponseRedirect(reverse("index:home", args=()))
 
         return render(request, 'admin_edit_book.html',
@@ -355,17 +318,8 @@ class AdminEditBookView(View, PermissionRequiredMixin):
 class DeleteBookView(View):
 
     def get(self, request, *args, **kwargs):
-        book = get_object_or_404(Book, id=kwargs['book_id'])
-        if book.upload_author == request.user:
-            books_with_this_book_link = Book.objects.filter(book=book.book)
-            books_with_this_image_link = Book.objects.filter(image=book.image)
-            if len(books_with_this_book_link) == 1:
-                book.book.delete()
-
-            if len(books_with_this_image_link) == 1:
-                book.image.delete()
-
-            book.delete()
+        successful = DataQuery.delete_book(kwargs['book_id'], request.user.id)
+        if successful:
             return HttpResponseRedirect(reverse("index:my_books", args=()))
         else:
             raise Http404("Ви не маєте прав на цю книгу")
@@ -380,39 +334,20 @@ class SearchView(View):
         author_ = author
         if title == 'n':
             title_ = ''
-
         if author == 'n':
             author_ = ''
 
         category_id = kwargs['category_id']
-        is_public = kwargs['is_public']
-        category = Categories.objects.get(id=category_id)
-        categories_ids = category.get_descendants(include_self=True).values_list('id')
-        category_name = category.name
-
-        if is_public == 0:
-            is_public_ = 'ні'
-        elif is_public == 1:
-            is_public_ = "так"
+        if category_id:
+            category = Categories.objects.get(id=category_id)
         else:
-            is_public_ = 'yсі'
-
+            category = None
         form = SearchBookForm(request.POST or None, initial={"title": title_, 'author': author_,
-                                                             "category": category_name, 'is_public': is_public_})
-        if is_public == 0:
-            books = Book.objects.filter(title__contains=title_, author__contains=author_,
-                                        category_id__in=categories_ids,
-                                        is_public=False)
-        elif is_public == 1:
-            books = request.user.book_set.filter(title__contains=title_, author__contains=author_,
-                                                 category_id__in=categories_ids, is_public=True)
-        else:
-            books = request.user.book_set.filter(title__contains=title_, author__contains=author_,
-                                                 category_id__in=categories_ids)
-
+                                                             "category": category})
+        books = DataQuery.search_books(title_, author_, category_id)
         return render(request, "search.html",
-                      {"books": books, "form": form, "title": title, "author": author, "category_id": category_id,
-                       "is_public": is_public})
+                      {"books": books, "form": form, "title": title, "author": author, "category_id": category_id
+                       })
 
     def post(self, request, *args, **kwargs):
         form = SearchBookForm(request.POST or None)
@@ -420,25 +355,12 @@ class SearchView(View):
 
             title = form.cleaned_data['title']
             author = form.cleaned_data['author']
+            category = form.cleaned_data['category']
+            category_id = 0
+            if category:
+                category_id = category.id
+            books = DataQuery.search_books(title, author, category_id)
 
-            category_name = form.cleaned_data['category']
-            is_public = form.cleaned_data['is_public']
-            category = Categories.objects.get(name=category_name)
-            categories_ids = category.get_descendants(include_self=True)
-
-            if is_public == 'ні':
-                is_public = 0
-                books = Book.objects.filter(title__contains=title, author__contains=author,
-                                            category_id__in=categories_ids,
-                                            is_public=False).order_by('-rating')
-            elif is_public == "так":
-                is_public = 1
-                books = request.user.book_set.filter(title__contains=title, author__contains=author,
-                                                     category_id__in=categories_ids, is_public=True).order_by('-rating')
-            else:
-                is_public = 2
-                books = request.user.book_set.filter(title__contains=title, author__contains=author,
-                                                     category_id__шт=categories_ids).order_by('-rating')
         if author == '':
             author = 'n'
 
@@ -446,8 +368,7 @@ class SearchView(View):
             title = 'n'
 
         return render(request, "search.html",
-                      {"books": books, "form": form, "title": title, "author": author, "category_id": category.id,
-                       "is_public": is_public})
+                      {"books": books, "form": form, "title": title, "author": author, "category_id": category_id})
 
 
 class AccountSettingsView(View):

@@ -110,7 +110,7 @@
                     {% if categories %}
                         {% for category in categories %}
                            <li class="nav-item p-0">
-                              <a class="nav-link p-0" href="{{ url("index:category", args=[category.id]) }}">{{ category }}</a>
+                              <a class="nav-link p-0" href="{{ url("index:category", args=[category.id]) }}">{{ category.name }}</a>
                            </li>
 
                         {% endfor %}

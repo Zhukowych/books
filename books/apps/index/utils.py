@@ -8,6 +8,7 @@ from .forms import SearchBookForm, AddBookForm, SetCategoryForm, FileUploadForm
 from .models import Categories, Book, BookImageLink, BufferFiles, BookFiles
 from .DataQuery import DataQuery
 
+
 def search_in_my_books(form: SearchBookForm, user: SimpleLazyObject) -> QuerySet:
     title = form.cleaned_data['title']
     author = form.cleaned_data['author']
@@ -34,36 +35,21 @@ def get_data_from_search_form(form: SearchBookForm) -> HttpResponseRedirect:
         title = "n"
     if author == '':
         author = "n"
-    category_id = Categories.objects.get(name=form.cleaned_data['category']).id
-    if form.cleaned_data['is_public'] == 'так':
-        is_public = 1
-    elif form.cleaned_data['is_public'] == 'ні':
-        is_public = 0
+    if form.cleaned_data['category']:
+        category_id = form.cleaned_data['category'].id
     else:
-        is_public = 2
+        category_id = 0
+
     return HttpResponseRedirect(reverse('index:search', args=(title, author,
-                                                              category_id, is_public,
+                                                              category_id
                                                               )))
 
 
 def add_book(add_book_form: AddBookForm, set_category_form: SetCategoryForm,
              file_form: FileUploadForm, user: SimpleLazyObject) -> HttpResponseRedirect:
-    image = add_book_form.cleaned_data['image']
-    DataQuery.upload_book_image_link(image)
-    image_link = BookImageLink(image_link=image)
-    image_link.save()
-    is_public = add_book_form.cleaned_data['isPublic']
-
-    category = set_category_form.cleaned_data['category']
-    name = set_category_form.cleaned_data['name']
-    parent_category = set_category_form.cleaned_data['parent_category']
-
-    if category:
-        category = category
-    else:
-        category = Categories.objects.create(name=name, parent=parent_category)
-
-    book_id = DataQuery.create_book(add_book_form.cleaned_data, user.id, category.id, image_link.id)
+    image_link_id = DataQuery.upload_book_image_link(add_book_form.cleaned_data['image'])
+    category_id = DataQuery.get_or_create_category_for_book(set_category_form.cleaned_data)
+    book_id = DataQuery.create_book(add_book_form.cleaned_data, user.id, category_id, image_link_id)
     DataQuery.move_book_files_from_buffer_to_vault(user.id, book_id)
     return HttpResponseRedirect(reverse("index:book", args=(book_id,)))
 
@@ -73,3 +59,7 @@ def clean_add_form(data):
         if format:
             return
     raise forms.ValidationError('ви маєте вказати хоча б один формат книги')
+
+
+"""--HELPERS-BEAUTIFULERS--"""
+
