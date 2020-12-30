@@ -134,7 +134,6 @@ class AddBook(View):
 
     def post(self, request, *args, **kwargs):
         form = AddBookForm(request.POST, request.FILES)
-
         file_form = FileUploadForm(request.POST, request.FILES)
         set_category_form = SetCategoryForm(request.POST)
         if form.is_valid() and set_category_form.is_valid():
@@ -175,35 +174,15 @@ class DeleteBufferView(View):
 class BookView(View):
 
     def get(self, request, *args, **kwargs):
-        book = get_object_or_404(Book, id=kwargs['book_id'])
-        try:
-            br = BookRating.objects.get(book=book, user=request.user)
-            cr = CategoryRating.objects.get(category=book.category, user=request.user)
-        except:
-            br = BookRating.objects.create(book=book, user=request.user, view=0)
-            cr = CategoryRating.objects.create(category=book.category, user=request.user, view=0)
-        cr.view = cr.view + 1
-        br.view = br.view + 1
-        br.save()
-        cr.save()
-
-        try:
-            favorite_book = FavoriteBooksModel.objects.get(user=request.user, book=book)
-        except FavoriteBooksModel.DoesNotExist:
-            favorite_book = None
         form = CommentForm(request.POST or None)
-        if request.user.is_authenticated and book.is_public:
-
-            return render(request, "book.html", {"book": book, 'form': form, 'favorite_book': favorite_book})
-        elif not request.user.is_authenticated and book.is_public:
-            return render(request, "book.html", {"book": book, 'form': form, 'favorite_book': favorite_book})
-        elif not book.is_public and book.upload_author == request.user:
-            return render(request, "book.html", {"book": book, 'form': form, 'favorite_book': favorite_book})
-
+        book = get_object_or_404(Book, id=kwargs['book_id'])
+        book.views += 1
+        book.save()
+        whether_book_is_favorite = DataQuery.whether_book_is_favorite(request.user.id, book.id)
+        if whether_user_can_open_book(request.user, book):
+            return render(request, "book.html", {"book": book, 'form': form, 'favorite_book': whether_book_is_favorite})
         else:
             raise Http404("В вас не має прав на данну книгу")
-
-        return render(request, "book.html", {"book": book, 'form': form, 'favorite_book': favorite_book})
 
 
 class TrainModelView(PermissionRequiredMixin, View):

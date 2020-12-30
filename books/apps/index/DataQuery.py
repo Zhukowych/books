@@ -9,6 +9,7 @@ class Util:
 
     @staticmethod
     def create_full_url_of_book_image_and_files(books: tuple):
+        """adds to image and files pathes IP+/media/"""
         for book in books:
             for file in book['referencedBookFile']:
                 file['file'] = settings.STANDARD_IP + settings.MEDIA_URL + file['file']
@@ -16,6 +17,7 @@ class Util:
 
     @staticmethod
     def resolve_books_list(books: tuple):
+        """unrolls tuple. For example [{'book':{}}] -> [{}]"""
         for book in range(len(books)):
             books[book] = books[book]['book']
 
@@ -99,6 +101,7 @@ class DataQuery:
 
     @staticmethod
     def get_category_books_and_children_categories(user_id: int, category_id: int) -> tuple:
+        """returns books of category with id=category_id and her children, names ond ids of children categories"""
         category = get_object_or_404(Categories, id=category_id)
         query = '''
             query get_category_books($categoryId: Int!, $userId: Int!){
@@ -186,6 +189,7 @@ class DataQuery:
 
     @staticmethod
     def move_book_files_from_buffer_to_vault(user_id: int, book_id: int) -> None:
+        """moves files from temporary vault to stable"""
         query = '''
             mutation move_book_files_from_buffer_to_vault($userId: Int!, $bookId: Int!){
                 moveBookFilesFromBufferToVault(userId: $userId, bookId: $bookId){
@@ -308,3 +312,17 @@ class DataQuery:
         result = schema.execute(query, variables={"title": title, "author": author, "categoryId": category_id}).data['searchBooks']
         Util.create_full_url_of_book_image_and_files(result)
         return result
+
+    @staticmethod
+    def whether_book_is_favorite(user_id: int, book_id: int) -> False:
+        query = '''
+            query whether_book_is_favorite($bookId: Int!, $userId: Int!){
+                whetherBookIsFavorite(bookId: $bookId, userId: $userId)
+            }
+        '''
+        result = schema.execute(query, variables={'bookId': book_id, 'userId': user_id}).data['whetherBookIsFavorite']
+        return result
+
+    @staticmethod
+    def change_book_and_category_ratings(book_id: int, category_id: int):
+        pass

@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models.query import QuerySet
 from django.utils.functional import SimpleLazyObject
@@ -63,3 +64,17 @@ def clean_add_form(data):
 
 """--HELPERS-BEAUTIFULERS--"""
 
+
+def whether_user_can_open_book(user: SimpleLazyObject, book: Book):
+    if user.is_authenticated and book.is_public:
+        return True
+    elif not user.is_authenticated and book.is_public:
+        return True
+    elif not book.is_public and book.upload_author == user:
+        return True
+    else:
+        return False
+
+
+def is_favorite_book():
+    pass

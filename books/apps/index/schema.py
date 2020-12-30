@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 import graphene
 from django.db.models import Q
@@ -13,10 +14,10 @@ class Query(graphene.ObjectType):
     children_categories = graphene.List(CategoriesType, category_id=graphene.Int())
     search_books = graphene.List(BookType, title=graphene.String(), author=graphene.String(),
                                  category_id=graphene.Int())
+    whether_book_is_favorite = graphene.Boolean(user_id=graphene.Int(), book_id=graphene.Int())
 
     @staticmethod
     def resolve_books(self, info, user_id):
-        user = User.objects.get(id=user_id)
         return Book.objects.filter(is_public=True).order_by("-rating")
 
     @staticmethod
@@ -49,6 +50,15 @@ class Query(graphene.ObjectType):
         else:
             books = Book.objects.filter(title__contains=title, author__contains=author, is_public=True)
         return books
+
+    @staticmethod
+    def resolve_whether_book_is_favorite(self, info, user_id, book_id):
+        try:
+            FavoriteBooksModel.objects.get(user_id=user_id, book_id=book_id)
+            whether_book_is_favorite = True
+        except FavoriteBooksModel.DoesNotExist:
+            whether_book_is_favorite = False
+        return whether_book_is_favorite
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation, types=[Upload])

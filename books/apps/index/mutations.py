@@ -1,7 +1,7 @@
 from graphene_file_upload.scalars import Upload
 import graphene
 from .types import BookType, Book, BufferFiles, BookFiles, BookImageLinkType, BookImageLink, CategoriesType, Categories, \
-    Info
+    Info, BookRating, CategoryRating
 from django.utils import timezone
 
 
@@ -169,6 +169,23 @@ class UploadBookImageLink(graphene.Mutation):
         image_link_instance = BookImageLink.objects.create(image_link=image)
         return UploadBookImageLink(ok=ok, image_link=image_link_instance)
 
+class ChangeBookAndCategoryRating(graphene.Mutation):
+    class Arguments:
+        book_id = graphene.Int()
+        category_id = graphene.Int()
+
+    @staticmethod
+    def mutate(self, info, book_id, category_id):
+        try:
+            br = BookRating.objects.get(book=book, user=request.user)
+            cr = CategoryRating.objects.get(category=book.category, user=request.user)
+        except:
+            br = BookRating.objects.create(book=book, user=request.user, view=0)
+            cr = CategoryRating.objects.create(category=book.category, user=request.user, view=0)
+        cr.view = cr.view + 1
+        br.view = br.view + 1
+        br.save()
+        cr.save()
 
 class Mutation(graphene.ObjectType):
     create_book = CreateBook.Field()
