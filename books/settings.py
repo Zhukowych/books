@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os, sys
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -42,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'graphene_django',
     'mptt',
-    'index'
+    'index',
+    'webpack_loader'
 ]
 
 MIDDLEWARE = [
@@ -56,7 +56,7 @@ MIDDLEWARE = [
 ]
 
 GRAPHENE = {
-    'SCHEMA': 'index.schema.schema' # Where your Graphene schema lives
+    'SCHEMA': 'index.schema.schema'  # Where your Graphene schema lives
 }
 
 ROOT_URLCONF = 'books.urls'
@@ -130,7 +130,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, "media")
 
@@ -140,7 +139,14 @@ STATICFILES_DIRS = [
     os.path.join(PROJECT_ROOT, "static"),
 ]
 
-#CELERY
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        'BUNDLE_DIR_NAME': 'bundles/',
+        'STATS_FILE': os.path.join(BASE_DIR, 'webpack-stats.json'),
+    }
+}
+
+# CELERY
 
 
 REDIS_HOST = 'localhost'

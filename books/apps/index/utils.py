@@ -1,12 +1,11 @@
 from django import forms
-from django.contrib.auth.models import User
-from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from django.db.models.query import QuerySet
 from django.utils.functional import SimpleLazyObject
-from django.http.response import HttpResponseRedirect
+from django.http.response import HttpResponseRedirect, Http404
 from django.urls import reverse
 from .forms import SearchBookForm, AddBookForm, SetCategoryForm, FileUploadForm
-from .models import Categories, Book, BookImageLink, BufferFiles, BookFiles
+from .models import Categories, Book
 from .DataQuery import DataQuery
 
 
@@ -76,5 +75,12 @@ def whether_user_can_open_book(user: SimpleLazyObject, book: Book):
         return False
 
 
-def is_favorite_book():
-    pass
+def only_for_book_owners(function_to_decorate):
+    def wrapper(view_object, request, *args, **kwargs):
+        book = get_object_or_404(Book, id=kwargs['book_id'])
+        if book.upload_author == request.user:
+            return function_to_decorate(view_object, request, *args, **kwargs, book=book)
+        else:
+            raise Http404("Ви не маєте прав на цю книгу")
+
+    return wrapper

@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from graphene_file_upload.scalars import Upload
 import graphene
-from books.apps.index.types import BookType, Book, BufferFiles, BookFiles, BookImageLinkType, BookImageLink, CategoriesType, Categories, \
+from .types import BookType, Book, BufferFiles, BookFiles, BookImageLinkType, BookImageLink, CategoriesType, Categories, \
     Info
 from django.utils import timezone
 

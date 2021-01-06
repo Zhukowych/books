@@ -15,7 +15,6 @@ urlpatterns = [
     path('accounts_settings', AccountSettingsView.as_view(), name="account_settings"),
     path("change_password/", ChangePasswordView.as_view(), name="change_password"),
     path('change_user_data/', ChangeUserDataView.as_view(), name="change_user_data"),
-    path('like_book/<int:book_id>/', LikeBookView.as_view(), name='like_book'),
     path('edit_book/<int:book_id>/', EditBook.as_view(), name='edit_book'),
     path('delete_book/<int:book_id>', DeleteBookView.as_view(), name='delete_book'),
     path('add_comment/<int:book_id>', AddCommentView.as_view(), name='add_comment'),
@@ -30,6 +29,5 @@ urlpatterns = [
     path('change_favorite/<int:book_id>', ChangeFavoriteView.as_view(), name="change_favorite"),
     path('create_category/', CreateCategoryView.as_view(), name="create_category"),
     path('load_buffer/<int:state>/<int:book_id>/', LoadBufferBookView.as_view(), name='load_buffer'),
-    path('delete_buffer/<str:name>/<int:state>/', DeleteBufferView.as_view(), name='delete_buffer'),
-    path('train_model/', TrainModelView.as_view(), name='train_model'),
+    path('delete_buffer/<str:name>/<int:state>/', DeleteBufferView.as_view(), name='delete_buffer')
 ]

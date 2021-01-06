@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from graphene_django import DjangoObjectType
 
-from books.apps.index.models import Book, BookImageLink, BookFiles, Categories, FavoriteBooksModel, BufferFiles, BookRating, CategoryRating, Info
+from .models import Book, BookImageLink, BookFiles, Categories, FavoriteBooksModel, BufferFiles, BookRating, CategoryRating, Info
 
 
 class UserType(DjangoObjectType):

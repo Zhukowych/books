@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from books.apps.index.schema import schema
+from   .schema import schema
 from django.conf import settings
-
+from .models import Categories
 
 class Util:
 
@@ -45,8 +45,8 @@ class DataQuery:
     @staticmethod
     def get_all_public_and_users_books(user_id: int) -> tuple:
         query = '''
-            query get_all_books($userId: Int!){
-                books(userId:$userId){
+            query{
+                books{
                     id,
                     title,
                     referencedBookFile{
@@ -66,7 +66,7 @@ class DataQuery:
                 }
             }    
         '''
-        result = schema.execute(query, variables={"userId": user_id}).data['books']
+        result = schema.execute(query).data['books']
         Util.create_full_url_of_book_image_and_files(result)
         return result
 

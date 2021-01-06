@@ -1,0 +1,7 @@
+<div class="pages_block">
+    <p v-if="false" class="book_data">{{ books }}</p>
+    <p v-if="false" class="user_id">{{ request.user.id|string }}</p>
+    <p v-if="false" class="has_perm">{{ request.user.has_perm("auth.admin") }}</p>
+    <book-pages></book-pages>
+</div>
+{{ render_bundle('main') }}

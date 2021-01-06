@@ -1,11 +1,11 @@
 from django.shortcuts import get_object_or_404
 import graphene
-from books.apps.index.mutations import Mutation, Upload
-from books.apps.index.types import *
+from .mutations import Mutation, Upload
+from .types import *
 
 
 class Query(graphene.ObjectType):
-    books = graphene.List(BookType, user_id=graphene.Int())
+    books = graphene.List(BookType)
     my_books = graphene.List(BookType, user_id=graphene.Int())
     books_from_category = graphene.List(BookType, user_id=graphene.Int(), category_id=graphene.Int())
     favorite_books = graphene.List(FavoriteBookType, user_id=graphene.Int())
@@ -15,7 +15,7 @@ class Query(graphene.ObjectType):
     whether_book_is_favorite = graphene.Boolean(user_id=graphene.Int(), book_id=graphene.Int())
 
     @staticmethod
-    def resolve_books(self, info, user_id):
+    def resolve_books(self, info):
         return Book.objects.filter(is_public=True).order_by("-rating")
 
     @staticmethod

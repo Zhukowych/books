@@ -1,29 +1,25 @@
-import json
-
 from django.forms.utils import ErrorList
-from django.shortcuts import render, get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
 from django.views import View
 from .forms import *
 from django.contrib.auth.models import auth
-from django.http import HttpResponseRedirect, JsonResponse, Http404
-from django.urls import reverse
-from django.utils import timezone
+from django.http import JsonResponse
 from .models import *
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from .utils import *
-from django import forms
-from .schema import schema
 from .DataQuery import DataQuery
+import json
 
 
 class HomeView(View):
 
     def get(self, request, *args, **kwargs):
+        print(request.user)
         books = DataQuery.get_all_public_and_users_books(request.user.id)
         form = SearchBookForm(request.POST or None)
-        return render(request, 'home.html', {'books': books, "categories": Categories.objects.filter(level=0),
-                                             "form": form})
+        return render(request, 'home.html',
+                      {'books': json.dumps(books), "categories": Categories.objects.filter(level=0),
+                       "form": form})
 
     def post(self, request, *args, **kwargs):
         books = DataQuery.get_all_public_and_users_books(request.user.id)
@@ -39,7 +35,8 @@ class CategoryView(View):
     def get(self, request, *args, **kwargs):
         form = SearchBookForm(request.POST or None)
         data = DataQuery.get_category_books_and_children_categories(request.user.id, kwargs['category_id'])
-        return render(request, 'category.html', {"books": data['booksFromCategory'], "category": data['category'],
+
+        return render(request, 'category.html', {"books": json.dumps(data['booksFromCategory']), "category": data['category'],
                                                  "categories": data['childrenCategories'], "form": form})
 
     def post(self, request, *args, **kwargs):
@@ -47,7 +44,7 @@ class CategoryView(View):
         data = DataQuery.get_category_books_and_children_categories(request.user.id, kwargs['category_id'])
         if form.is_valid():
             return get_data_from_search_form(form)
-        return render(request, 'category.html', {"books": data['booksFromCategory'], "category": data['category'],
+        return render(request, 'category.html', {"books": json.dumps(data['booksFromCategory']), "category": data['category'],
                                                  "categories": data['childrenCategories'], "form": form})
 
 
@@ -57,14 +54,14 @@ class MyBooks(View):
         books = DataQuery.get_my_books(request.user.id)
         form = SearchBookForm(request.POST or None)
         return render(request, 'my_books.html',
-                      {"books": books, "form": form, "categories": Categories.objects.filter(level=0)})
+                      {"books": json.dumps(books), "form": form, "categories": Categories.objects.filter(level=0)})
 
     def post(self, request, *args, **kwargs):
         form = SearchBookForm(request.POST or None)
         if form.is_valid():
             books = search_in_my_books(form, request.user)
         return render(request, 'my_books.html',
-                      {"books": books, "form": form, "categories": Categories.objects.filter(level=0)})
+                      {"books": json.dumps(books), "form": form, "categories": Categories.objects.filter(level=0)})
 
 
 class LoginView(View):
@@ -118,7 +115,7 @@ class FavoriteBooks(View):
     def get(self, request, *args, **kwargs):
         books = DataQuery.get_favorite_books(request.user.id)
         return render(request, 'favorite_books.html',
-                      {"books": books, "categories": Categories.objects.filter(level=0)})
+                      {"books": json.dumps(books), "categories": Categories.objects.filter(level=0)})
 
 
 class AddBook(View):
@@ -185,13 +182,6 @@ class BookView(View):
             raise Http404("В вас не має прав на данну книгу")
 
 
-class TrainModelView(PermissionRequiredMixin, View):
-    permission_required = 'auth.admin'
-
-    def get(self, request, *args, **kwargs):
-        return HttpResponseRedirect(reverse('index:account_settings', args=()))
-
-
 class AddCommentView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
@@ -205,65 +195,42 @@ class AddCommentView(LoginRequiredMixin, View):
             return JsonResponse({'error': 'error'})
 
 
-class LikeBookView(LoginRequiredMixin, View):
-
-    def get(self, request, *args, **kwargs):
-        book = get_object_or_404(Book, id=kwargs['book_id'])
-        try:
-            book_rating = BookRating.objects.get(user=request.user, book=book)
-        except book_rating.DoesNotExist:
-            book_rating = BookRating.objects.create(user=request.user, book=book)
-        if not book_rating.like:
-            book.likes += 1
-            book.rating = book.likes / book.views
-            book.save()
-            book_rating.like = True
-            book_rating.save()
-        return HttpResponseRedirect(reverse("index:book", args=(kwargs['book_id'],)))
-
-
 class EditBook(View):
 
+    @only_for_book_owners
     def get(self, request, *args, **kwargs):
-        book = get_object_or_404(Book, id=kwargs['book_id'])
-        if book.upload_author == request.user:
-            form = AddBookForm(request.POST or None,
-                               initial={'title': book.title, 'author': book.author, 'description': book.description,
-                                        'category': book.category.id, 'is_public': book.is_public,
-                                        'series': book.series,
-                                        'edition': book.edition, 'count_of_pages': book.count_of_pages,
-                                        'translator': book.translator})
-            file_form = FileUploadForm(request.POST or None)
-            set_category_form = SetCategoryForm(request.POST or None, initial={'category': book.category})
-
-        else:
-            raise Http404("Ви не маєте прав на цю книгу")
+        book = kwargs['book']
+        form = AddBookForm(request.POST or None,
+                           initial={'title': book.title, 'author': book.author, 'description': book.description,
+                                    'category': book.category.id, 'is_public': book.is_public,
+                                    'series': book.series,
+                                    'edition': book.edition, 'count_of_pages': book.count_of_pages,
+                                    'translator': book.translator})
+        file_form = FileUploadForm(request.POST or None)
+        set_category_form = SetCategoryForm(request.POST or None, initial={'category': book.category})
         return render(request, 'edit_book.html',
                       {"form": form, 'file_form': file_form, "categories": Categories.objects.filter(level=0),
                        'book': book, "set_category_form": set_category_form, "files": "s",
                        'buffer': BookFiles.objects.filter(book=book)})
 
+    @only_for_book_owners
     def post(self, request, *args, **kwargs):
-        book = get_object_or_404(Book, id=kwargs['book_id'])
-        if book.upload_author == request.user:
-            form = AddBookForm(request.POST, request.FILES,
-                               initial={'title': book.title, 'author': book.author, 'description': book.description,
-                                        'category': book.category.id, 'isPublic': book.is_public,
-                                        'series': book.series,
-                                        'edition': book.edition, 'countOfPages': book.count_of_pages,
-                                        'translator': book.translator})
-            file_form = FileUploadForm(request.POST, request.FILES)
-            set_category_form = SetCategoryForm(request.POST, initial={'category': book.category})
-            if not BookFiles.objects.filter(book=book):
-                errors = file_form.errors.setdefault("file", ErrorList())
-                errors.append("Ви маєте внести хоча б один файл")
-            if form.is_valid() and set_category_form.is_valid():
-                DataQuery.edit_book(edited_book_data=form.cleaned_data.copy(),
-                                    category_data=set_category_form.cleaned_data.copy(), book_id=book.id)
-                return HttpResponseRedirect(reverse('index:my_books', args=()))
-
-        else:
-            raise Http404("Ви не маєте прав на цю книгу")
+        book = kwargs['book']
+        form = AddBookForm(request.POST, request.FILES,
+                           initial={'title': book.title, 'author': book.author, 'description': book.description,
+                                    'category': book.category.id, 'isPublic': book.is_public,
+                                    'series': book.series,
+                                    'edition': book.edition, 'countOfPages': book.count_of_pages,
+                                    'translator': book.translator})
+        file_form = FileUploadForm(request.POST, request.FILES)
+        set_category_form = SetCategoryForm(request.POST, initial={'category': book.category})
+        if not BookFiles.objects.filter(book=book):
+            errors = file_form.errors.setdefault("file", ErrorList())
+            errors.append("Ви маєте внести хоча б один файл")
+        if form.is_valid() and set_category_form.is_valid():
+            DataQuery.edit_book(edited_book_data=form.cleaned_data.copy(),
+                                category_data=set_category_form.cleaned_data.copy(), book_id=book.id)
+            return HttpResponseRedirect(reverse('index:my_books', args=()))
         return render(request, 'edit_book.html',
                       {"form": form, 'file_form': file_form, "categories": Categories.objects.filter(level=0),
                        'book': book, "set_category_form": set_category_form, "files": "s",
@@ -325,7 +292,7 @@ class SearchView(View):
                                                              "category": category})
         books = DataQuery.search_books(title_, author_, category_id)
         return render(request, "search.html",
-                      {"books": books, "form": form, "title": title, "author": author, "category_id": category_id
+                      {"books": json.dumps(books), "form": form, "title": title, "author": author, "category_id": category_id
                        })
 
     def post(self, request, *args, **kwargs):
@@ -347,7 +314,7 @@ class SearchView(View):
             title = 'n'
 
         return render(request, "search.html",
-                      {"books": books, "form": form, "title": title, "author": author, "category_id": category_id})
+                      {"books": json.dumps(books), "form": form, "title": title, "author": author, "category_id": category_id})
 
 
 class AccountSettingsView(View):
@@ -412,24 +379,6 @@ class ChangeUserDataView(View):
                       {"categories": Categories.objects.filter(level=0), "form": form})
 
 
-class Messanges(View):
-
-    def get(self, request, *args, **kwargs):
-        messanges = request.user.info_set.all()
-        return render(request, "messanges.html",
-                      {"categories": Categories.objects.filter(level=0), 'messanges': messanges})
-
-
-class SendAnswerView(View):
-
-    def get(self, request, *args, **kwargs):
-        messange = get_object_or_404(Info, id=kwargs['messange_id'])
-        messange.type = 'a'
-        messange.answer_state = 'p'
-        messange.save()
-        return HttpResponseRedirect(reverse('index:messanges', args=()))
-
-
 class AdminMessangesView(PermissionRequiredMixin, View):
     permission_required = 'auth.admin'
 
@@ -439,27 +388,38 @@ class AdminMessangesView(PermissionRequiredMixin, View):
                       {"categories": Categories.objects.filter(level=0), 'messanges': messanges})
 
 
+class Messanges(View):
+    """Displays all messages about blocking user's books"""
+
+    def get(self, request, *args, **kwargs):
+        messanges = request.user.info_set.all()
+        return render(request, "messanges.html",
+                      {"categories": Categories.objects.filter(level=0), 'messanges': messanges})
+
+
+class SendAnswerView(View):
+    """Ajax view for sending info about changing book data for unblocking book"""
+
+    def get(self, request, *args, **kwargs):
+        DataQuery.send_answer(kwargs['messange_id'])
+        return HttpResponseRedirect(reverse('index:messanges', args=()))
+
+
 class AcceptAnswerView(PermissionRequiredMixin, View):
+    """Ajax view for unblocking book and sending message about this to user"""
     permission_required = 'auth.admin'
 
     def get(self, request, *args, **kwargs):
-        messange = get_object_or_404(Info, id=kwargs['messange_id'])
-        messange.book.can_change_public = True
-        messange.book.save()
-        Info.objects.create(title="Вам зноку надано права на зміну публічності книги #", user=messange.user,
-                            book=messange.book, type='s')
-        messange.delete()
+        DataQuery.accept_answer(kwargs['messange_id'])
         return JsonResponse({})
 
 
 class NotAcceptAnswerView(PermissionRequiredMixin, View):
+    """Ajax view for recall request user's unblocking book message"""
     permission_required = 'auth.admin'
 
     def get(self, request, *args, **kwargs):
-        messange = get_object_or_404(Info, id=kwargs['messange_id'])
-        messange.type = 'u'
-        messange.answer_state = 'w'
-        messange.save()
+        DataQuery.not_accept_answer(kwargs['messange_id'])
         return JsonResponse({})
 
 
@@ -490,14 +450,4 @@ class ChangeFavoriteView(View):
 
 
 class CreateCategoryView(View):
-
-    @csrf_exempt
-    def post(self, request, *args, **kwargs):
-        form = CreateCategoryForm(request.POST)
-        if form.is_valid():
-            name = form.cleaned_data['name']
-            parent = get_object_or_404(Categories, name=form.cleaned_data['father_category'])
-            category = Categories.objects.create(name=name, parent=parent)
-            return JsonResponse({'category_name': category.name})
-
-        return JsonResponse({})
+    pass
