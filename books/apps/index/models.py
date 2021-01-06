@@ -3,6 +3,10 @@ from mptt.models import MPTTModel, TreeForeignKey
 from django.contrib.auth.models import User
 
 
+class BookImageLink(models.Model):
+    image_link = models.ImageField(upload_to='book_images/', blank=True, null=True)
+
+
 class Categories(MPTTModel):
     name = models.CharField(max_length=50, unique=True)
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
@@ -12,10 +16,6 @@ class Categories(MPTTModel):
 
     class MPTTMeta:
         order_insertion_by = ['name']
-
-
-class BookImageLink(models.Model):
-    image_link = models.ImageField(upload_to='book_images/', blank=True, null=True)
 
 
 class Book(models.Model):
@@ -43,9 +43,11 @@ class BookFiles(models.Model):
     expansion = models.CharField(max_length=30)
     book = models.ForeignKey(Book, related_name="referenced_book_file", on_delete=models.CASCADE)
 
+
 class BufferFiles(models.Model):
     file = models.FileField('', upload_to="buffer/", blank=True, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+
 
 class Info(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -60,6 +62,7 @@ class BookRating(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     book = models.ForeignKey(Book, on_delete=models.CASCADE)
     view = models.IntegerField(default=False)
+
 
 class CategoryRating(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)

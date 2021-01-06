@@ -1,9 +1,7 @@
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 import graphene
-from django.db.models import Q
-from .mutations import Mutation, Upload
-from .types import *
+from books.apps.index.mutations import Mutation, Upload
+from books.apps.index.types import *
 
 
 class Query(graphene.ObjectType):

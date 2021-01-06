@@ -1,7 +1,8 @@
+from django.shortcuts import get_object_or_404
 from graphene_file_upload.scalars import Upload
 import graphene
-from .types import BookType, Book, BufferFiles, BookFiles, BookImageLinkType, BookImageLink, CategoriesType, Categories, \
-    Info, BookRating, CategoryRating
+from books.apps.index.types import BookType, Book, BufferFiles, BookFiles, BookImageLinkType, BookImageLink, CategoriesType, Categories, \
+    Info
 from django.utils import timezone
 
 
@@ -169,23 +170,53 @@ class UploadBookImageLink(graphene.Mutation):
         image_link_instance = BookImageLink.objects.create(image_link=image)
         return UploadBookImageLink(ok=ok, image_link=image_link_instance)
 
-class ChangeBookAndCategoryRating(graphene.Mutation):
+
+class AcceptAnswer(graphene.Mutation):
     class Arguments:
-        book_id = graphene.Int()
-        category_id = graphene.Int()
+        message_id = graphene.Int()
+
+    ok = graphene.Boolean()
 
     @staticmethod
-    def mutate(self, info, book_id, category_id):
-        try:
-            br = BookRating.objects.get(book=book, user=request.user)
-            cr = CategoryRating.objects.get(category=book.category, user=request.user)
-        except:
-            br = BookRating.objects.create(book=book, user=request.user, view=0)
-            cr = CategoryRating.objects.create(category=book.category, user=request.user, view=0)
-        cr.view = cr.view + 1
-        br.view = br.view + 1
-        br.save()
-        cr.save()
+    def mutate(self, info, message_id):
+        message = get_object_or_404(Info, id=message_id)
+        message.book.can_change_public = True
+        message.book.save()
+        Info.objects.create(title="Вам зноку надано права на зміну публічності книги #", user=message.user,
+                            book=message.book, type='s')
+        message.delete()
+        return AcceptAnswer(ok=True)
+
+
+class NotAcceptAnswer(graphene.Mutation):
+    class Arguments:
+        message_id = graphene.Int()
+
+    ok = graphene.Boolean()
+
+    @staticmethod
+    def mutate(self, info, message_id):
+        message = get_object_or_404(Info, id=message_id)
+        message.type = 'u'
+        message.answer_state = 'w'
+        message.save()
+        return NotAcceptAnswer(ok=True)
+
+
+class SendAnswer(graphene.Mutation):
+    class Arguments:
+        message_id = graphene.Int()
+
+    ok = graphene.Boolean()
+
+    @staticmethod
+    def mutate(self, info, message_id):
+        message = get_object_or_404(Info, id=message_id)
+        message.type = 'a'
+        message.answer_state = 'p'
+        message.save()
+        return SendAnswer(ok=True)
+
 
 class Mutation(graphene.ObjectType):
     create_book = CreateBook.Field()
@@ -195,3 +226,6 @@ class Mutation(graphene.ObjectType):
     edit_book_data = EditBookData.Field()
     change_book_visibility = ChangeBookVisibility.Field()
     delete_book = DeleteBook.Field()
+    accept_answer = AcceptAnswer.Field()
+    not_accept_answer = NotAcceptAnswer.Field()
+    send_answer = SendAnswer.Field()

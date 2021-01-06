@@ -1,7 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from .models import Categories, Book
-from .schema import schema
+from books.apps.index.schema import schema
 from django.conf import settings
 
 
@@ -324,5 +323,34 @@ class DataQuery:
         return result
 
     @staticmethod
-    def change_book_and_category_ratings(book_id: int, category_id: int):
-        pass
+    def accept_answer(message_id: int) -> None:
+        query = '''
+            mutation accept_answer($messageId: Int!){
+                acceptAnswer(messageId: $messageId){
+                    ok
+                }
+            }
+        '''
+        result = schema.execute(query, variables={"messageId": message_id})
+
+    @staticmethod
+    def not_accept_answer(message_id: int) -> None:
+        query = '''
+            mutation not_accept_answer($messageId: Int!){
+                notAcceptAnswer(messageId: $messageId){
+                    ok
+                }
+            }
+        '''
+        result = schema.execute(query, variables={"messageId": message_id})
+
+    @staticmethod
+    def send_answer(message_id: int) -> None:
+        query = '''
+            mutation send_answer($messageId: Int!){
+                sendAnswer(messageId: $messageId){
+                    ok
+                }
+            }
+        '''
+        result = schema.execute(query, variables={"messageId": message_id})
